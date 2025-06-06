@@ -1,7 +1,6 @@
 import { Zap } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import navbar from "@/data/navbar";
 
 const Navbar = () => {
   return (
@@ -16,30 +15,7 @@ const Navbar = () => {
               StreamTipz
             </span>
           </div>
-          <nav className="hidden md:flex items-center space-x-6">
-            {navbar.map((item, val) => (
-              <Link
-                href={item.href}
-                className="text-gray-600 hover:text-purple-600 transition-colors"
-                key={val}
-              >
-                {item.name}
-              </Link>
-            ))}
 
-            {/* <Link
-              href="#pricing"
-              className="text-gray-600 hover:text-purple-600 transition-colors"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="#about"
-              className="text-gray-600 hover:text-purple-600 transition-colors"
-            >
-              About
-            </Link> */}
-          </nav>
           <div className="flex items-center space-x-3">
             <Button variant="ghost" asChild>
               <Link href="/auth">Sign In</Link>
