@@ -1,19 +1,13 @@
 import { Button } from "@/components/ui/button";
-
 import { Badge } from "@/components/ui/badge";
 import { Youtube, Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import YoutubeEmbed from "@/components/Youtube";
 import Features from "@/components/Features";
-import Footer from "@/components/Footer";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      {/* Header */}
-      <Navbar />
-
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
@@ -65,17 +59,6 @@ export default function HomePage() {
             <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-2xl blur-3xl opacity-20"></div>
             <YoutubeEmbed videoId="LpjrZGfwooE?si=LA67wFmf2lP8baI2" />
           </div>
-
-          {/* <div className="relative max-w-4xl mx-auto">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-2xl blur-3xl opacity-20"></div>
-            <Image
-              src="/placeholder.svg?height=600&width=800"
-              alt="StreamTip Dashboard Preview"
-              width={800}
-              height={600}
-              className="relative rounded-2xl shadow-2xl border border-gray-200"
-            />
-          </div> */}
         </div>
       </section>
 
@@ -104,9 +87,6 @@ export default function HomePage() {
           </Button>
         </div>
       </section>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

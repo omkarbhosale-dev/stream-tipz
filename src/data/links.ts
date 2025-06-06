@@ -8,8 +8,8 @@ export const quickLinks = [
     href: "/about",
   },
   {
-    name: "Contact",
-    href: "/contact",
+    name: "Leaderboard",
+    href: "/leaderboard",
   },
 ];
 
