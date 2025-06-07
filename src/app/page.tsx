@@ -1,13 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Youtube, Star, ArrowRight } from "lucide-react";
+import { Star, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import YoutubeEmbed from "@/components/Youtube";
 import Features from "@/components/Features";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import Leaboard from "@/components/Leaboard";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+      <Navbar />
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
@@ -17,10 +21,10 @@ export default function HomePage() {
           </Badge>
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-purple-800 bg-clip-text text-transparent leading-tight">
-            Turn Your Stream Into a
+            The Safest Way to Send
             <br />
             <span className="text-transparent bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text">
-              Tip Powerhouse
+              Donation Alerts
             </span>
           </h1>
 
@@ -36,20 +40,9 @@ export default function HomePage() {
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-6"
               asChild
             >
-              <Link href="/auth">
+              <Link href="/signup">
                 Start Earning Now
                 <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 py-6 border-2 hover:bg-purple-50"
-              asChild
-            >
-              <Link href="/tip/demo">
-                <Youtube className="mr-2 w-5 h-5" />
-                See Demo
               </Link>
             </Button>
           </div>
@@ -61,10 +54,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <Features />
-
+      {/* Leadboard Section */}
+      <Leaboard />
       {/* CTA Section */}
       <section className="py-20 px-4 bg-gradient-to-r from-purple-600 to-blue-600">
         <div className="container mx-auto text-center">
@@ -80,13 +73,15 @@ export default function HomePage() {
             className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-6"
             asChild
           >
-            <Link href="/auth">
+            <Link href="/signup">
               Get Started for Free
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
         </div>
       </section>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

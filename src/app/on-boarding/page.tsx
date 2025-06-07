@@ -1,0 +1,207 @@
+"use client";
+import { onboardingSchema } from "@/schemas/onboarding.schema";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { CreditCard, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { onBoardingAction, getStreamer } from "@/actions/onboarding.acion";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+const OnBoarding = () => {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchStreamer = async () => {
+      const data = await getStreamer(session?.user.id);
+      console.log("Fetched Streamer Data:", data);
+
+      if (data?.success) {
+        router.push("/dashboard");
+      }
+    };
+
+    fetchStreamer();
+  }, [session]);
+
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [upiId, setUpiId] = useState("");
+  const [jwtToken, setJwtToken] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateField = (
+    field: "username" | "displayName" | "jwtToken" | "bio" | "upiId",
+    value: string
+  ) => {
+    try {
+      onboardingSchema
+        .pick({ [field]: true } as Record<typeof field, true>)
+        .parse({ [field]: value });
+      setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+    } catch (err: unknown) {
+      setFieldErrors((prev) => {
+        if (err instanceof z.ZodError) {
+          return {
+            ...prev,
+            [field]: err.errors?.[0]?.message || "Invalid value",
+          };
+        }
+        return {
+          ...prev,
+          [field]: "Invalid value",
+        };
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    const payload = { username, displayName, jwtToken, bio, upiId };
+
+    try {
+      const data = await onBoardingAction({ params: payload });
+      if (data.success) {
+        toast.success("On-boarding successful!");
+        router.push("/dashboard");
+      }
+    } catch (err: unknown) {
+      if (err instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        err.errors.forEach((e) => {
+          if (e.path[0]) errors[e.path[0]] = e.message;
+        });
+        setFieldErrors(errors);
+      }
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+      <div className="max-w-2xl space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <User className="w-5 h-5" />
+              <span>StreamTipz On-boarding</span>
+            </CardTitle>
+            <CardDescription>
+              Please fill in your details to get started
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setUsername(val);
+                  validateField("username", val);
+                }}
+                placeholder="Enter a username"
+              />
+              {fieldErrors.username && (
+                <p className="text-xs text-red-500">{fieldErrors.username}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Display Name</Label>
+              <Input
+                id="name"
+                value={displayName}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDisplayName(val);
+                  validateField("displayName", val);
+                }}
+                placeholder="Enter a name"
+              />
+              {fieldErrors.displayName && (
+                <p className="text-xs text-red-500">
+                  {fieldErrors.displayName}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jwt">JWT Token</Label>
+              <Input
+                id="jwt"
+                type="password"
+                autoComplete="off"
+                value={jwtToken}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setJwtToken(val);
+                  validateField("jwtToken", val);
+                }}
+                placeholder="Enter a StreamElements JWT Token"
+              />
+              {fieldErrors.jwtToken && (
+                <p className="text-xs text-red-500">{fieldErrors.jwtToken}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBio(val);
+                  validateField("bio", val);
+                }}
+                placeholder="Tell us about yourself"
+              />
+              {fieldErrors.bio && (
+                <p className="text-xs text-red-500">{fieldErrors.bio}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="upi-id" className="flex items-center space-x-2">
+                <CreditCard className="w-4 h-4" />
+                <span>UPI ID</span>
+              </Label>
+              <Input
+                id="upi-id"
+                value={upiId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setUpiId(val);
+                  validateField("upiId", val);
+                }}
+                placeholder="Enter a UPI ID (e.g., yourname@bank)"
+              />
+              {fieldErrors.upiId && (
+                <p className="text-xs text-red-500">{fieldErrors.upiId}</p>
+              )}
+              <p className="text-sm text-gray-500">
+                This UPI ID will be used for automatic payouts.
+              </p>
+            </div>
+
+            <Button className="w-full" onClick={handleSubmit}>
+              Save
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default OnBoarding;
