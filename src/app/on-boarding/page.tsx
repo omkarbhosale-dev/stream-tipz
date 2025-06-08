@@ -1,4 +1,5 @@
 "use client";
+
 import { onboardingSchema } from "@/schemas/onboarding.schema";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -20,21 +21,36 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 const OnBoarding = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    const fetchStreamer = async () => {
-      const data = await getStreamer(session?.user.id);
-      console.log("Fetched Streamer Data:", data);
+    // Wait until session is loaded and authenticated
+    if (status !== "authenticated") return;
 
-      if (data?.success) {
-        router.push("/dashboard");
+    const fetchStreamer = async () => {
+      try {
+        // console.log("Session:", session);
+        // console.log("User ID:", session?.user?.id);
+
+        if (!session?.user?.id) {
+          console.error("User ID is undefined.");
+          return;
+        }
+
+        const data = await getStreamer(session.user.id);
+        // console.log("Fetched Streamer Data:", data);
+
+        if (data?.success) {
+          router.push("/dashboard");
+        }
+      } catch (err) {
+        console.error("Error fetching streamer:", err);
       }
     };
 
     fetchStreamer();
-  }, [session]);
+  }, [status, session]);
 
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -84,13 +100,15 @@ const OnBoarding = () => {
           if (e.path[0]) errors[e.path[0]] = e.message;
         });
         setFieldErrors(errors);
+      } else {
+        toast.error("Something went wrong. Please try again.");
       }
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
-      <div className="max-w-2xl space-y-8">
+      <div className="max-w-2xl w-full space-y-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -102,6 +120,7 @@ const OnBoarding = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Username */}
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input
@@ -118,6 +137,8 @@ const OnBoarding = () => {
                 <p className="text-xs text-red-500">{fieldErrors.username}</p>
               )}
             </div>
+
+            {/* Display Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Display Name</Label>
               <Input
@@ -128,7 +149,7 @@ const OnBoarding = () => {
                   setDisplayName(val);
                   validateField("displayName", val);
                 }}
-                placeholder="Enter a name"
+                placeholder="Enter a display name"
               />
               {fieldErrors.displayName && (
                 <p className="text-xs text-red-500">
@@ -136,24 +157,26 @@ const OnBoarding = () => {
                 </p>
               )}
             </div>
+
+            {/* JWT Token */}
             <div className="space-y-2">
               <Label htmlFor="jwt">JWT Token</Label>
               <Input
                 id="jwt"
-                type="password"
-                autoComplete="off"
                 value={jwtToken}
                 onChange={(e) => {
                   const val = e.target.value;
                   setJwtToken(val);
                   validateField("jwtToken", val);
                 }}
-                placeholder="Enter a StreamElements JWT Token"
+                placeholder="Enter your JWT token"
               />
               {fieldErrors.jwtToken && (
                 <p className="text-xs text-red-500">{fieldErrors.jwtToken}</p>
               )}
             </div>
+
+            {/* Bio */}
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
               <Textarea
@@ -164,38 +187,38 @@ const OnBoarding = () => {
                   setBio(val);
                   validateField("bio", val);
                 }}
-                placeholder="Tell us about yourself"
+                placeholder="Tell us a bit about yourself"
               />
               {fieldErrors.bio && (
                 <p className="text-xs text-red-500">{fieldErrors.bio}</p>
               )}
             </div>
 
+            {/* UPI ID */}
             <div className="space-y-2">
-              <Label htmlFor="upi-id" className="flex items-center space-x-2">
-                <CreditCard className="w-4 h-4" />
-                <span>UPI ID</span>
-              </Label>
-              <Input
-                id="upi-id"
-                value={upiId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setUpiId(val);
-                  validateField("upiId", val);
-                }}
-                placeholder="Enter a UPI ID (e.g., yourname@bank)"
-              />
+              <Label htmlFor="upiId">UPI ID</Label>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+                <Input
+                  id="upiId"
+                  value={upiId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setUpiId(val);
+                    validateField("upiId", val);
+                  }}
+                  placeholder="example@upi"
+                  className="pl-10"
+                />
+              </div>
               {fieldErrors.upiId && (
                 <p className="text-xs text-red-500">{fieldErrors.upiId}</p>
               )}
-              <p className="text-sm text-gray-500">
-                This UPI ID will be used for automatic payouts.
-              </p>
             </div>
 
+            {/* Submit */}
             <Button className="w-full" onClick={handleSubmit}>
-              Save
+              Submit
             </Button>
           </CardContent>
         </Card>

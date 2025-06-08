@@ -43,10 +43,30 @@ export const onBoardingAction = async ({
   return { upload: upload._doc, success: true };
 };
 
-export const getStreamer = async (userID: string) => {
+export const getStreamer = async (userId: string) => {
+  console.log("getStreamer called with userId:", userId);
   connectToDatabase();
-  const streamer = await Streamer.findOne({ userId: userID });
-  if (streamer) {
-    return { success: true, streamer: streamer._doc };
+
+  try {
+    const existing = await Streamer.findOne({ userId: userId }).lean();
+    console.log("Fetched Streamer:", existing);
+
+    if (existing) {
+      return {
+        success: true,
+        data: existing,
+      };
+    } else {
+      return {
+        success: false,
+        data: null,
+      };
+    }
+  } catch (error) {
+    console.error("getStreamer error:", error);
+    return {
+      success: false,
+      data: null,
+    };
   }
 };

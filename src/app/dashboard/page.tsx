@@ -42,6 +42,7 @@ import {
   Info,
 } from "lucide-react";
 import { useState } from "react";
+import Navbar from "@/components/Navbar";
 
 const mockTransactions = [
   {
@@ -154,6 +155,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+      <Navbar />
       <div className="container mx-auto px-4 py-8">
         {/* Payout Notice */}
         <Alert className="mb-8 border-blue-200 bg-blue-50">
