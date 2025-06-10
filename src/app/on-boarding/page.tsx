@@ -57,10 +57,17 @@ const OnBoarding = () => {
   const [bio, setBio] = useState("");
   const [upiId, setUpiId] = useState("");
   const [jwtToken, setJwtToken] = useState("");
+  const [channelId, setChannelId] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const validateField = (
-    field: "username" | "displayName" | "jwtToken" | "bio" | "upiId",
+    field:
+      | "username"
+      | "displayName"
+      | "jwtToken"
+      | "bio"
+      | "upiId"
+      | "channelId",
     value: string
   ) => {
     try {
@@ -85,7 +92,7 @@ const OnBoarding = () => {
   };
 
   const handleSubmit = async () => {
-    const payload = { username, displayName, jwtToken, bio, upiId };
+    const payload = { username, displayName, jwtToken, bio, upiId, channelId };
 
     try {
       const data = await onBoardingAction({ params: payload });
@@ -163,6 +170,8 @@ const OnBoarding = () => {
               <Label htmlFor="jwt">JWT Token</Label>
               <Input
                 id="jwt"
+                type="password"
+                autoComplete="off"
                 value={jwtToken}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -173,6 +182,25 @@ const OnBoarding = () => {
               />
               {fieldErrors.jwtToken && (
                 <p className="text-xs text-red-500">{fieldErrors.jwtToken}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="channelId">Channel ID</Label>
+              <Input
+                id="channelId"
+                type="password"
+                autoComplete="off"
+                value={channelId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setChannelId(val);
+                  validateField("channelId", val);
+                }}
+                placeholder="Enter your channel ID"
+              />
+              {fieldErrors.jwtToken && (
+                <p className="text-xs text-red-500">{fieldErrors.channelId}</p>
               )}
             </div>
 

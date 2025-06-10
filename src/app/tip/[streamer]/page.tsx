@@ -1,5 +1,4 @@
 "use client";
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +14,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, Gift } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { getStreamerUsername } from "@/actions/onboarding.acion";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const tipAmounts = [20, 25, 50, 100, 250, 500];
 
@@ -24,22 +27,110 @@ export default function TipPage({
 }: {
   params: { params: Promise<{ streamer: string }> };
 }) {
-  const { streamer } = React.use(params);
-  const streamerName = decodeURIComponent(streamer);
+  const router = useRouter();
+  const resolvedParams = use(params);
+  const streamerName = decodeURIComponent(resolvedParams.streamer);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [tipperName, setTipperName] = useState("");
   const [customAmount, setCustomAmount] = useState("");
   const [message, setMessage] = useState("");
-  //   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [streamerData, setStreamerData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleTip = () => {
+  useEffect(() => {
+    const fetchStreamerData = async () => {
+      try {
+        const data = await getStreamerUsername(streamerName);
+
+        if (data.success) {
+          setStreamerData(data.data);
+        } else {
+          console.error("Failed to fetch streamer data:", data.error);
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Critical error in data fetch:", error);
+        router.push("/error");
+      } finally {
+        setLoading(false); // Always set loading to false
+      }
+    };
+
+    fetchStreamerData();
+  }, [streamerName, router]);
+
+  // Show loading state while fetching data
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading streamer data...</div>
+      </div>
+    );
+  }
+
+  // Handle case where data couldn't be loaded
+  if (!streamerData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-red-500">
+          Streamer not found. Redirecting...
+        </div>
+      </div>
+    );
+  }
+
+  const handleTip = async () => {
     const amount = selectedAmount || Number.parseFloat(customAmount);
-    console.log(amount);
 
-    // if (amount && amount > 0) {
-    //   // Handle tip submission
-    //   console.log("Tip submitted:", { amount, message, isAnonymous });
-    // }
+    if (!amount || amount <= 10) {
+      toast.error("Please enter a valid tip amount greater than ₹10.");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Prepare payment data
+      const paymentData = {
+        amount,
+        productInfo: `Tip|${streamerData.username}`,
+        firstName: tipperName || "Anonymous",
+        email: "user@example.com", // In real app, collect user email
+        phone: "9999999999", // In real app, collect user phone
+      };
+
+      // Initiate payment
+      const response = await fetch("/api/payment/initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (!response.ok) throw new Error("Payment initiation failed");
+
+      const { url, params } = await response.json();
+
+      // Create form to redirect to PayU
+      const form = document.createElement("form");
+      form.method = "post";
+      form.action = url;
+
+      Object.entries(params).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value as string;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error("Payment failed. Please try again.");
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -62,9 +153,11 @@ export default function TipPage({
                       </AvatarFallback>
                     </Avatar>
                   </div>
-                  <CardTitle className="text-2xl">{streamerName}</CardTitle>
+                  <CardTitle className="text-2xl">
+                    {streamerData.displayName}
+                  </CardTitle>
                   <CardDescription className="text-lg">
-                    Gaming Streamer & Content Creator
+                    {streamerData.bio}
                   </CardDescription>
                   <div className="flex justify-center space-x-4 mt-4">
                     <div className="text-center">
@@ -256,8 +349,17 @@ export default function TipPage({
                     disabled={!selectedAmount && !customAmount}
                     className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg"
                   >
-                    <Heart className="w-5 h-5 mr-2" />
-                    Send Tip ₹{selectedAmount || customAmount || 0}
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Heart className="w-5 h-5 mr-2" />
+                        Send Tip ₹{selectedAmount || customAmount || 0}
+                      </>
+                    )}
                   </Button>
 
                   <p className="text-xs text-gray-500 text-center">

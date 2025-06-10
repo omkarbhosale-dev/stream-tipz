@@ -1,5 +1,6 @@
 "use client";
-
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,8 +42,9 @@ import {
   Download,
   Info,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
+import { getStreamer } from "@/actions/onboarding.acion";
 
 const mockTransactions = [
   {
@@ -98,6 +100,9 @@ const mockTransactions = [
 ];
 
 export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [streamerData, setStreamerData] = useState();
   const [activeTab, setActiveTab] = useState("overview");
   const [timeFilter, setTimeFilter] = useState("30days");
   const [startDate, setStartDate] = useState("");
@@ -105,6 +110,32 @@ export default function DashboardPage() {
   const [showEntries, setShowEntries] = useState("10");
   const [filteredTransactions, setFilteredTransactions] =
     useState(mockTransactions);
+
+  useEffect(() => {
+    // Wait until session is loaded and authenticated
+    if (status !== "authenticated") return;
+
+    const fetchStreamer = async () => {
+      try {
+        if (!session?.user?.id) {
+          console.error("User ID is undefined.");
+          return;
+        }
+
+        const data = await getStreamer(session.user.id);
+        setStreamerData(data.data);
+        // console.log("Fetched Streamer Data:", data);
+
+        if (data?.success === false) {
+          router.push("/on-boarding");
+        }
+      } catch (err) {
+        console.error("Error fetching streamer:", err);
+      }
+    };
+
+    fetchStreamer();
+  }, [status, session]);
 
   // Mock user data
   const [userSettings, setUserSettings] = useState({
@@ -413,7 +444,7 @@ export default function DashboardPage() {
                   <Label htmlFor="name">Display Name</Label>
                   <Input
                     id="name"
-                    value={userSettings.name}
+                    value={streamerData?.displayName}
                     onChange={(e) =>
                       setUserSettings({ ...userSettings, name: e.target.value })
                     }
@@ -425,7 +456,7 @@ export default function DashboardPage() {
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
-                    value={userSettings.bio}
+                    value={streamerData?.bio}
                     onChange={(e) =>
                       setUserSettings({ ...userSettings, bio: e.target.value })
                     }
@@ -444,7 +475,7 @@ export default function DashboardPage() {
                   </Label>
                   <Input
                     id="upi-id"
-                    value={userSettings.upiId}
+                    value={streamerData?.upiId}
                     onChange={(e) =>
                       setUserSettings({
                         ...userSettings,
@@ -474,14 +505,14 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="flex items-center space-x-2">
                   <Input
-                    value={`https://streamtipz.com/tip/${userSettings.name.toLowerCase()}`}
+                    value={`https://streamtipz.in/tip/${streamerData?.username.toLowerCase()}`}
                     readOnly
                     className="flex-1"
                   />
                   <Button
                     onClick={() => {
                       navigator.clipboard.writeText(
-                        `https://streamtipz.com/tip/${userSettings.name.toLowerCase()}`
+                        `https://streamtipz.in/tip/${streamerData?.username.toLowerCase()}`
                       );
                     }}
                   >

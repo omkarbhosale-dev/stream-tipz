@@ -13,6 +13,7 @@ export const onboardingSchema = z.object({
     .max(50, "Display name can't exceed 50 characters"),
 
   jwtToken: z.string().min(10, "JWT Token is too short"),
+  channelId: z.string().min(5, "Channel Id is too short"),
 
   bio: z
     .string()
