@@ -27,106 +27,35 @@ import {
   Star,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 // Mock data for streamers
-const mockStreamers = [
-  {
-    id: 1,
-    name: "GamerPro123",
-    avatar: "/placeholder-user.jpg",
-    category: "Gaming",
-    followers: "12.5K",
-    isVerified: true,
-    weeklyScore: 2450,
-  },
-  {
-    id: 2,
-    name: "StreamQueen",
-    avatar: "/placeholder-user.jpg",
-    category: "Just Chatting",
-    followers: "8.9K",
-    isVerified: true,
-    weeklyScore: 2380,
-  },
-  {
-    id: 3,
-    name: "TechMaster",
-    avatar: "/placeholder-user.jpg",
-    category: "Technology",
-    followers: "15.2K",
-    isVerified: true,
-    weeklyScore: 2210,
-  },
-  {
-    id: 4,
-    name: "MusicVibes",
-    avatar: "/placeholder-user.jpg",
-    category: "Music",
-    followers: "6.7K",
-    isVerified: false,
-    weeklyScore: 1890,
-  },
-  {
-    id: 5,
-    name: "ArtisticSoul",
-    avatar: "/placeholder-user.jpg",
-    category: "Art",
-    followers: "4.3K",
-    isVerified: true,
-    weeklyScore: 1750,
-  },
-  {
-    id: 6,
-    name: "FitnessGuru",
-    avatar: "/placeholder-user.jpg",
-    category: "Fitness",
-    followers: "9.1K",
-    isVerified: false,
-    weeklyScore: 1620,
-  },
-  {
-    id: 7,
-    name: "CookingChef",
-    avatar: "/placeholder-user.jpg",
-    category: "Cooking",
-    followers: "7.8K",
-    isVerified: true,
-    weeklyScore: 1580,
-  },
-  {
-    id: 8,
-    name: "ComedyKing",
-    avatar: "/placeholder-user.jpg",
-    category: "Comedy",
-    followers: "11.2K",
-    isVerified: false,
-    weeklyScore: 1450,
-  },
-  {
-    id: 9,
-    name: "StudyBuddy",
-    avatar: "/placeholder-user.jpg",
-    category: "Education",
-    followers: "3.9K",
-    isVerified: true,
-    weeklyScore: 1320,
-  },
-  {
-    id: 10,
-    name: "TravelExplorer",
-    avatar: "/placeholder-user.jpg",
-    category: "Travel",
-    followers: "5.6K",
-    isVerified: false,
-    weeklyScore: 1180,
-  },
-];
 
 export default function LeaderboardPage() {
   const [timeFilter, setTimeFilter] = useState("this-week");
+  const [leaderboardData, setLeaderboardData] = useState([]);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      const res = await fetch("/api/leaderboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeFilter }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        setLeaderboardData(result.data);
+        console.log("Leaderboard data fetched successfully:", result.data);
+      } else {
+        console.error("Failed to fetch leaderboard:", result.message);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [timeFilter]);
 
   const getMedalIcon = (position: number) => {
     switch (position) {
@@ -212,11 +141,11 @@ export default function LeaderboardPage() {
                 <div className="relative mx-auto mb-4">
                   <Avatar className="w-20 h-20 border-4 border-gray-300">
                     <AvatarImage
-                      src={mockStreamers[1].avatar || "/placeholder.svg"}
-                      alt={mockStreamers[1].name}
+                      src={"/placeholder.svg"}
+                      alt={leaderboardData[1].displayName}
                     />
                     <AvatarFallback className="text-2xl bg-gradient-to-r from-gray-200 to-gray-300">
-                      {mockStreamers[1].name.charAt(0)}
+                      {leaderboardData[1].displayName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -top-2 -right-2 w-10 h-10 bg-gradient-to-r from-gray-300 to-gray-500 rounded-full flex items-center justify-center">
@@ -224,11 +153,11 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
                 <CardTitle className="text-xl">
-                  {mockStreamers[1].name}
+                  {leaderboardData[1].displayName}
                 </CardTitle>
                 <CardDescription className="flex items-center justify-center space-x-2">
-                  <span>{mockStreamers[1].category}</span>
-                  {mockStreamers[1].isVerified && (
+                  <span>{leaderboardData[1].category}</span>
+                  {leaderboardData[1].isVerified && (
                     <Star className="w-4 h-4 text-blue-500" />
                   )}
                 </CardDescription>
@@ -237,7 +166,7 @@ export default function LeaderboardPage() {
                 <div className="text-3xl font-bold text-gray-500 mb-2">2nd</div>
                 <div className="flex items-center justify-center space-x-1 text-gray-600">
                   <Users className="w-4 h-4" />
-                  <span>{mockStreamers[1].followers}</span>
+                  <span>{leaderboardData[1].followers}</span>
                 </div>
               </CardContent>
             </Card>
@@ -255,11 +184,11 @@ export default function LeaderboardPage() {
                 <div className="relative mx-auto mb-4">
                   <Avatar className="w-24 h-24 border-4 border-yellow-400">
                     <AvatarImage
-                      src={mockStreamers[0].avatar || "/placeholder.svg"}
-                      alt={mockStreamers[0].name}
+                      src={leaderboardData[0].avatar || "/placeholder.svg"}
+                      alt={leaderboardData[0].name}
                     />
                     <AvatarFallback className="text-2xl bg-gradient-to-r from-yellow-200 to-yellow-300">
-                      {mockStreamers[0].name.charAt(0)}
+                      {leaderboardData[0].name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -top-2 -right-2 w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
@@ -267,11 +196,11 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
                 <CardTitle className="text-2xl">
-                  {mockStreamers[0].name}
+                  {leaderboardData[0].name}
                 </CardTitle>
                 <CardDescription className="flex items-center justify-center space-x-2">
-                  <span>{mockStreamers[0].category}</span>
-                  {mockStreamers[0].isVerified && (
+                  <span>{leaderboardData[0].category}</span>
+                  {leaderboardData[0].isVerified && (
                     <Star className="w-4 h-4 text-blue-500" />
                   )}
                 </CardDescription>
@@ -282,7 +211,7 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="flex items-center justify-center space-x-1 text-gray-600">
                   <Users className="w-4 h-4" />
-                  <span>{mockStreamers[0].followers}</span>
+                  <span>{leaderboardData[0].followers}</span>
                 </div>
               </CardContent>
             </Card>
@@ -295,11 +224,11 @@ export default function LeaderboardPage() {
                 <div className="relative mx-auto mb-4">
                   <Avatar className="w-20 h-20 border-4 border-amber-400">
                     <AvatarImage
-                      src={mockStreamers[2].avatar || "/placeholder.svg"}
-                      alt={mockStreamers[2].name}
+                      src={leaderboardData[2].avatar || "/placeholder.svg"}
+                      alt={leaderboardData[2].name}
                     />
                     <AvatarFallback className="text-2xl bg-gradient-to-r from-amber-200 to-amber-300">
-                      {mockStreamers[2].name.charAt(0)}
+                      {leaderboardData[2].name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -top-2 -right-2 w-10 h-10 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full flex items-center justify-center">
@@ -307,11 +236,11 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
                 <CardTitle className="text-xl">
-                  {mockStreamers[2].name}
+                  {leaderboardData[2].name}
                 </CardTitle>
                 <CardDescription className="flex items-center justify-center space-x-2">
-                  <span>{mockStreamers[2].category}</span>
-                  {mockStreamers[2].isVerified && (
+                  <span>{leaderboardData[2].category}</span>
+                  {leaderboardData[2].isVerified && (
                     <Star className="w-4 h-4 text-blue-500" />
                   )}
                 </CardDescription>
@@ -322,7 +251,7 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="flex items-center justify-center space-x-1 text-gray-600">
                   <Users className="w-4 h-4" />
-                  <span>{mockStreamers[2].followers}</span>
+                  <span>{leaderboardData[2].followers}</span>
                 </div>
               </CardContent>
             </Card>
@@ -339,7 +268,7 @@ export default function LeaderboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockStreamers.map((streamer, index) => {
+              {leaderboardData.map((streamer, index) => {
                 const position = index + 1;
                 return (
                   <div

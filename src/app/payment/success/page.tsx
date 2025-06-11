@@ -3,17 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { CheckCircle, ArrowRight, Share2, Home } from "lucide-react";
+import { CheckCircle, Home } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function PaymentSuccessPage() {
-  const searchParams = useSearchParams();
-  const amount = searchParams.get("amount") || "25.00";
-  const streamer = searchParams.get("streamer") || "StreamerName";
-
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -67,12 +62,7 @@ export default function PaymentSuccessPage() {
                       Payment Successful!
                     </h1>
                     <p className="text-gray-600 mb-6">
-                      Your tip of{" "}
-                      <span className="font-bold text-green-600">
-                        ${amount}
-                      </span>{" "}
-                      to <span className="font-bold">{streamer}</span> was sent
-                      successfully.
+                      Your tip has been sent successfully.
                     </p>
                   </motion.div>
 
@@ -95,24 +85,11 @@ export default function PaymentSuccessPage() {
                       className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
                       asChild
                     >
-                      <Link href={`/tip/${streamer.toLowerCase()}`}>
-                        <ArrowRight className="mr-2 h-4 w-4" />
-                        Send Another Tip
+                      <Link href="/">
+                        <Home className="mr-2 h-4 w-4" />
+                        Return to homepage
                       </Link>
                     </Button>
-
-                    <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1" asChild>
-                        <Link href="/">
-                          <Home className="mr-2 h-4 w-4" />
-                          Home
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="flex-1">
-                        <Share2 className="mr-2 h-4 w-4" />
-                        Share
-                      </Button>
-                    </div>
                   </motion.div>
                 </div>
               </CardContent>

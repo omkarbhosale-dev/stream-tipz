@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  DollarSign,
   TrendingUp,
   Gift,
   Trophy,
@@ -44,72 +43,36 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { getStreamer } from "@/actions/onboarding.acion";
-
-const mockTransactions = [
-  {
-    id: 1,
-    date: "2024-01-15",
-    name: "GamerPro123",
-    amount: 25.0,
-    message: "Great stream! Keep it up!",
-  },
-  {
-    id: 2,
-    date: "2024-01-15",
-    name: "Anonymous",
-    amount: 10.0,
-    message: "Love your content!",
-  },
-  {
-    id: 3,
-    date: "2024-01-14",
-    name: "StreamFan",
-    amount: 50.0,
-    message: "Amazing gameplay today!",
-  },
-  {
-    id: 4,
-    date: "2024-01-14",
-    name: "TipMaster",
-    amount: 15.0,
-    message: "Thanks for the entertainment",
-  },
-  {
-    id: 5,
-    date: "2024-01-13",
-    name: "ViewerOne",
-    amount: 30.0,
-    message: "You're awesome!",
-  },
-  { id: 6, date: "2024-01-13", name: "Anonymous", amount: 5.0, message: "" },
-  {
-    id: 7,
-    date: "2024-01-12",
-    name: "BigSupporter",
-    amount: 100.0,
-    message: "Keep up the great work!",
-  },
-  {
-    id: 8,
-    date: "2024-01-12",
-    name: "RegularViewer",
-    amount: 20.0,
-    message: "Love the stream!",
-  },
-];
+import { getStreamer, updateStreamer } from "@/actions/onboarding.acion";
+import { getStreamerTransactions } from "@/actions/trasnsaction.action";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [streamerData, setStreamerData] = useState();
   const [activeTab, setActiveTab] = useState("overview");
-  const [timeFilter, setTimeFilter] = useState("30days");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [showEntries, setShowEntries] = useState("10");
-  const [filteredTransactions, setFilteredTransactions] =
-    useState(mockTransactions);
+  const [timeFilter, setTimeFilter] = useState<"today" | "30days" | "90days">(
+    "30days"
+  );
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showEntries, setShowEntries] = useState(5);
+  const [streamerDisplayName, setStreamerDisplayName] = useState("");
+  const [streamerBio, setStreamerBio] = useState("");
+  const [streamerUpiId, setStreamerUpiId] = useState("");
+  type Transaction = {
+    id: number;
+    date: string;
+    name: string;
+    amount: number;
+    message: string;
+    createdAt?: string;
+  };
+
+  const [transaction, setTransaction] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
 
   useEffect(() => {
     // Wait until session is loaded and authenticated
@@ -124,8 +87,17 @@ export default function DashboardPage() {
 
         const data = await getStreamer(session.user.id);
         setStreamerData(data.data);
+        setStreamerDisplayName(data.data?.displayName);
+        setStreamerBio(data.data?.bio);
+        setStreamerUpiId(data.data?.upiId);
         // console.log("Fetched Streamer Data:", data);
+        const transactionDataGet = await getStreamerTransactions(
+          session.user.id
+        );
+        console.log("Fetched Transactions:", transactionDataGet);
 
+        setTransaction(transactionDataGet.data);
+        setFilteredTransactions(transactionDataGet.data);
         if (data?.success === false) {
           router.push("/on-boarding");
         }
@@ -137,51 +109,126 @@ export default function DashboardPage() {
     fetchStreamer();
   }, [status, session]);
 
-  // Mock user data
-  const [userSettings, setUserSettings] = useState({
-    name: "StreamerName",
-    bio: "Gaming Streamer & Content Creator",
-    upiId: "streamer@upi",
-  });
-
   // Calculate earnings based on time filter
-  const getEarningsData = () => {
-    const totalEarnings = filteredTransactions.reduce(
-      (sum, t) => sum + t.amount,
-      0
-    );
-    const totalTips = filteredTransactions.length;
-    const averageTip = totalTips > 0 ? totalEarnings / totalTips : 0;
-    const highestTip = Math.max(
-      ...filteredTransactions.map((t) => t.amount),
-      0
-    );
 
-    return { totalEarnings, totalTips, averageTip, highestTip };
-  };
+  const handleSaveSettings = async () => {
+    const res = await fetch("/api/streamer/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        displayName: streamerDisplayName,
+        bio: streamerBio,
+        upiId: streamerUpiId,
+      }),
+    });
 
-  const { totalEarnings, totalTips, averageTip, highestTip } =
-    getEarningsData();
-
-  const handleSaveSettings = () => {
-    // Handle saving user settings
-    console.log("Settings saved:", userSettings);
+    const result = await res.json();
+    console.log(result);
   };
 
   const filterTransactions = () => {
-    let filtered = mockTransactions;
+    const filteredTableData = transaction.filter((tip) => {
+      const tipDate = new Date(tip.createdAt);
+      return (
+        (!startDate || tipDate >= startDate) && (!endDate || tipDate <= endDate)
+      );
+    });
 
-    if (startDate && endDate) {
-      filtered = filtered.filter((t) => {
-        const transactionDate = new Date(t.date);
-        return (
-          transactionDate >= new Date(startDate) &&
-          transactionDate <= new Date(endDate)
-        );
-      });
+    const paginatedTableData = filteredTableData.slice(0, showEntries);
+
+    setFilteredTransactions(paginatedTableData);
+  };
+
+  const summaryFilteredData = filteredTransactions.filter((tip) => {
+    const tipDate = new Date(tip.createdAt);
+    const now = new Date();
+
+    if (timeFilter === "today") {
+      return tipDate.toDateString() === now.toDateString();
+    } else if (timeFilter === "30days") {
+      const past30 = new Date(now.setDate(now.getDate() - 30));
+      return tipDate >= past30;
+    } else if (timeFilter === "90days") {
+      const past90 = new Date(now.setDate(now.getDate() - 90));
+      return tipDate >= past90;
     }
+    return true;
+  });
 
-    setFilteredTransactions(filtered.slice(0, Number.parseInt(showEntries)));
+  // Summary Calculations
+  const totalEarnings = summaryFilteredData.reduce(
+    (sum, item) => sum + item.amount,
+    0
+  );
+  const totalTransactions = summaryFilteredData.length;
+  const averageTransaction =
+    totalTransactions === 0 ? 0 : totalEarnings / totalTransactions;
+  const highestAmount = summaryFilteredData.reduce(
+    (max, item) => Math.max(max, item.amount),
+    0
+  );
+
+  const downloadPDF = async (data: any[], startDate?: Date, endDate?: Date) => {
+    const doc = new jsPDF();
+
+    // Fallback to last 30 days
+    const start = startDate ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ?? new Date();
+
+    const startStr = start.toLocaleDateString("en-GB");
+    const endStr = end.toLocaleDateString("en-GB");
+
+    // Filter data by date range
+    const filtered = data.filter((item) => {
+      const date = new Date(item.createdAt);
+      return date >= start && date <= end;
+    });
+
+    // Optional logo
+    // const logo = await fetch("/logo.png").then(res => res.blob()).then(...);
+
+    // doc.addImage(logo, "PNG", 15, 10, 30, 30); // Uncomment when using logo
+
+    // Header
+    doc.setFontSize(18);
+    doc.text("Tip Transaction Report", 105, 25, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.text(
+      `Generated on: ${new Date().toLocaleDateString("en-GB")}`,
+      105,
+      33,
+      { align: "center" }
+    );
+    doc.text(`Date Range: ${startStr} - ${endStr}`, 105, 41, {
+      align: "center",
+    });
+
+    // Table
+    autoTable(doc, {
+      startY: 50,
+      head: [["#", "Tipper Name", "Email", "Amount", "Date"]],
+      body: filtered.map((item, i) => [
+        i + 1,
+        item.tipperName,
+        item.tipperEmail,
+        `INR ${item.amount}`, // use Rs. or INR
+        new Date(item.createdAt).toLocaleDateString("en-GB"),
+      ]),
+      didDrawPage: (data) => {
+        // Optional: add logo again per page
+        // doc.addImage(logo, "PNG", 15, 10, 30, 30);
+        doc.setFontSize(10);
+        doc.text(
+          `Page ${data.pageNumber} of ${doc.getNumberOfPages()}`,
+          200,
+          290,
+          { align: "right" }
+        );
+      },
+    });
+
+    doc.save("tip-transactions.pdf");
   };
 
   return (
@@ -250,11 +297,11 @@ export default function DashboardPage() {
                   <CardTitle className="text-sm font-medium">
                     Total Earnings
                   </CardTitle>
-                  <DollarSign className="h-4 w-4 text-green-600" />
+                  <p className="h-6 w-6 text-green-600">₹</p>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">
-                    ${totalEarnings.toFixed(2)}
+                    ₹{totalEarnings.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     +12% from last period
@@ -271,7 +318,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-blue-600">
-                    {totalTips}
+                    {totalTransactions}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     +8% from last period
@@ -288,7 +335,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-purple-600">
-                    ${averageTip.toFixed(2)}
+                    ₹{averageTransaction.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     +5% from last period
@@ -305,7 +352,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-orange-600">
-                    ${highestTip.toFixed(2)}
+                    ₹{highestAmount.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Personal best!
@@ -324,7 +371,17 @@ export default function DashboardPage() {
                       Your latest tip transactions
                     </CardDescription>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      downloadPDF(
+                        filteredTransactions,
+                        startDate ?? undefined,
+                        endDate ?? undefined
+                      )
+                    }
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Statement
                   </Button>
@@ -361,7 +418,10 @@ export default function DashboardPage() {
                     <Label htmlFor="show-entries" className="text-sm">
                       Show:
                     </Label>
-                    <Select value={showEntries} onValueChange={setShowEntries}>
+                    <Select
+                      value={showEntries.toString()}
+                      onValueChange={(value) => setShowEntries(Number(value))}
+                    >
                       <SelectTrigger className="w-20">
                         <SelectValue />
                       </SelectTrigger>
@@ -394,16 +454,20 @@ export default function DashboardPage() {
                       {filteredTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell className="font-medium">
-                            {new Date(transaction.date).toLocaleDateString()}
+                            {new Date(transaction.createdAt).toLocaleDateString(
+                              "en-GB"
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
                               <Avatar className="w-6 h-6">
                                 <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
-                                  {transaction.name.charAt(0)}
+                                  {transaction.tipperName
+                                    .charAt(0)
+                                    .toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                              <span>{transaction.name}</span>
+                              <span>{transaction.tipperName}</span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -411,7 +475,7 @@ export default function DashboardPage() {
                               variant="secondary"
                               className="bg-green-100 text-green-700"
                             >
-                              ${transaction.amount.toFixed(2)}
+                              ₹{transaction.amount.toFixed(2)}
                             </Badge>
                           </TableCell>
                           <TableCell className="max-w-xs truncate">
@@ -428,7 +492,7 @@ export default function DashboardPage() {
         )}
 
         {activeTab === "settings" && (
-          <div className="max-w-2xl space-y-8">
+          <div className="max-w-2xl mx-auto space-y-8">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -444,10 +508,8 @@ export default function DashboardPage() {
                   <Label htmlFor="name">Display Name</Label>
                   <Input
                     id="name"
-                    value={streamerData?.displayName}
-                    onChange={(e) =>
-                      setUserSettings({ ...userSettings, name: e.target.value })
-                    }
+                    value={streamerDisplayName}
+                    onChange={(e) => setStreamerDisplayName(e.target.value)}
                     placeholder="Enter your display name"
                   />
                 </div>
@@ -456,10 +518,8 @@ export default function DashboardPage() {
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
-                    value={streamerData?.bio}
-                    onChange={(e) =>
-                      setUserSettings({ ...userSettings, bio: e.target.value })
-                    }
+                    value={streamerBio}
+                    onChange={(e) => setStreamerBio(e.target.value)}
                     placeholder="Tell your audience about yourself"
                     className="min-h-[100px]"
                   />
@@ -475,13 +535,8 @@ export default function DashboardPage() {
                   </Label>
                   <Input
                     id="upi-id"
-                    value={streamerData?.upiId}
-                    onChange={(e) =>
-                      setUserSettings({
-                        ...userSettings,
-                        upiId: e.target.value,
-                      })
-                    }
+                    value={streamerUpiId}
+                    onChange={(e) => setStreamerUpiId(e.target.value)}
                     placeholder="your-upi@bank"
                   />
                   <p className="text-sm text-gray-500">

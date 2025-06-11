@@ -15,7 +15,7 @@ interface ITransaction extends Document {
 
 const transactionSchema = new mongoose.Schema(
   {
-    streamerId: { type: String, required: true, unique: true },
+    streamerId: { type: String, required: true },
     tipperName: { type: String, required: true },
     tipperEmail: { type: String, required: true },
     amount: { type: Number, required: true },

@@ -23,6 +23,10 @@ const streamerSchema = new mongoose.Schema(
     bio: { type: String, required: true },
     upiId: { type: String, required: true },
     userId: { type: String, required: true },
+    tip: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

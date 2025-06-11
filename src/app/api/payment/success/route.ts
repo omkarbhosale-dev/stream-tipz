@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import Streamer from "@/models/streamer.model";
 import { connectToDatabase } from "@/db";
+import { createTransaction } from "@/actions/trasnsaction.action";
 
 export async function POST(req: NextRequest) {
   await connectToDatabase();
@@ -10,8 +11,9 @@ export async function POST(req: NextRequest) {
   console.log("Received form data:", Object.fromEntries(formData.entries()));
 
   const amount = formData.get("amount")?.toString();
+  const tnxId = formData.get("field2")?.toString();
   const firstname = formData.get("firstname")?.toString() || "Anonymous";
-  const message = formData.get("message")?.toString() || "";
+  const message = formData.get("udf1")?.toString() || "N/A";
   const email = formData.get("email")?.toString() || "";
   const productinfo = formData.get("productinfo")?.toString();
 
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
         username: firstname,
         email: email || `${firstname.toLowerCase()}@external.com`, // Email is required
       },
-      provider: "streamtipz", // or "paypal", "stripe", etc.
+      provider: "streamtipz",
       message: message,
       amount: Number(amount),
       currency: "INR",
@@ -87,52 +89,69 @@ export async function POST(req: NextRequest) {
         response.data
       );
 
+      const transaction = await createTransaction({
+        streamerId: streamer.userId,
+        tipperName: firstname,
+        tipperEmail: email,
+        amount: Number(amount),
+        message: message,
+        tnxId: tnxId || "",
+      });
+
+      console.log("Transaction created successfully:", {
+        transaction,
+      });
+
+      // const incrementTipResult = await incrementTip(streamer.userId);
+
+      // console.log(incrementTipResult);
+
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success`,
         { status: 302 }
       );
     } catch (streamElementsError) {
-      console.error("StreamElements API error:", {
-        status: streamElementsError.response?.status,
-        statusText: streamElementsError.response?.statusText,
-        data: streamElementsError.response?.data,
-        message: streamElementsError.message,
-      });
+      if (axios.isAxiosError(streamElementsError)) {
+        console.error("StreamElements API error:", {
+          status: streamElementsError.response?.status,
+          statusText: streamElementsError.response?.statusText,
+          data: streamElementsError.response?.data,
+          message: streamElementsError.message,
+        });
+      } else {
+        if (axios.isAxiosError(streamElementsError)) {
+          if (streamElementsError.response?.status === 401) {
+            console.error(
+              "Authentication failed - JWT token may be expired or invalid"
+            );
 
-      // Check if it's an authentication error
-      if (streamElementsError.response?.status === 401) {
-        console.error(
-          "Authentication failed - JWT token may be expired or invalid"
-        );
+            return NextResponse.redirect(
+              `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failure?error=auth`,
+              { status: 302 }
+            );
+          }
 
-        // Optionally, you could try to refresh the token here
-        // or mark the streamer's token as invalid in the database
+          // Check if it's a channel not found error
+          if (streamElementsError.response?.status === 404) {
+            console.error(
+              "Channel not found - channelId may be incorrect:",
+              channelId
+            );
 
-        return NextResponse.redirect(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failure?error=auth`,
-          { status: 302 }
-        );
-      }
+            return NextResponse.redirect(
+              `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failure?error=channel`,
+              { status: 302 }
+            );
+          }
 
-      // Check if it's a channel not found error
-      if (streamElementsError.response?.status === 404) {
-        console.error(
-          "Channel not found - channelId may be incorrect:",
-          channelId
-        );
-
-        return NextResponse.redirect(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failure?error=channel`,
-          { status: 302 }
-        );
-      }
-
-      // Check if it's a validation error
-      if (streamElementsError.response?.status === 400) {
-        console.error(
-          "Validation error - check required fields:",
-          streamElementsError.response.data
-        );
+          // Check if it's a validation error
+          if (streamElementsError.response?.status === 400) {
+            console.error(
+              "Validation error - check required fields:",
+              streamElementsError.response.data
+            );
+          }
+        }
       }
 
       // For other errors, still redirect to success since payment was processed
@@ -193,11 +212,19 @@ export async function testStreamElementsAPI(
       data: response.data,
     };
   } catch (error) {
-    return {
-      success: false,
-      status: error.response?.status,
-      error: error.response?.data || error.message,
-    };
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        status: error.response?.status,
+        error: error.response?.data || error.message,
+      };
+    } else {
+      return {
+        success: false,
+        status: undefined,
+        error: (error as Error).message || "Unknown error",
+      };
+    }
   }
 }
 
@@ -215,7 +242,7 @@ export function validateJWTToken(token: string): boolean {
 
     // Check if token has required StreamElements fields
     return !!(payload.channel && payload.role && payload.exp);
-  } catch (e) {
+  } catch {
     return false;
   }
 }

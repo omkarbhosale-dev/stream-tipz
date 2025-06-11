@@ -19,6 +19,8 @@ import { useRouter } from "next/navigation";
 import { getStreamerUsername } from "@/actions/onboarding.acion";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { getStreamerTransactions } from "@/actions/trasnsaction.action";
+import { set } from "mongoose";
 
 const tipAmounts = [20, 25, 50, 100, 250, 500];
 
@@ -37,6 +39,7 @@ export default function TipPage({
   const [streamerData, setStreamerData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [transactionId, setTransactionId] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStreamerData = async () => {
@@ -45,6 +48,25 @@ export default function TipPage({
 
         if (data.success) {
           setStreamerData(data.data);
+          if (data.data?.userId) {
+            const transactionDataGet = await getStreamerTransactions(
+              data.data.userId
+            );
+            if (transactionDataGet.success) {
+              const sorted = [...transactionDataGet.data].sort(
+                (a, b) =>
+                  new Date(b.createdAt).getTime() -
+                  new Date(a.createdAt).getTime()
+              );
+
+              const latestThree = sorted.slice(0, 3);
+              console.log("Latest three transactions:", latestThree);
+
+              setTransactionId(latestThree);
+            }
+          } else {
+            console.error("Streamer userId is undefined.");
+          }
         } else {
           console.error("Failed to fetch streamer data:", data.error);
           router.push("/");
@@ -98,6 +120,7 @@ export default function TipPage({
         firstName: tipperName || "Anonymous",
         email: "user@example.com", // In real app, collect user email
         phone: "9999999999", // In real app, collect user phone
+        message: message,
       };
 
       // Initiate payment
@@ -149,7 +172,7 @@ export default function TipPage({
                         alt={streamerName}
                       />
                       <AvatarFallback className="text-2xl bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                        {streamerName.charAt(0).toUpperCase()}
+                        {streamerData.displayName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </div>
@@ -163,7 +186,9 @@ export default function TipPage({
                     <div className="text-center">
                       <div className="flex items-center justify-center space-x-1">
                         <Heart className="w-4 h-4 text-red-500" />
-                        <span className="font-semibold">856</span>
+                        <span className="font-semibold">
+                          {streamerData.tip}
+                        </span>
                       </div>
                       <span className="text-sm text-gray-500">Tips</span>
                     </div>
@@ -187,39 +212,26 @@ export default function TipPage({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {[
-                    {
-                      name: "Anonymous",
-                      amount: 25,
-                      message: "Great stream! Keep it up!",
-                    },
-                    {
-                      name: "GamerPro123",
-                      amount: 10,
-                      message: "Love your content!",
-                    },
-                    {
-                      name: "StreamFan",
-                      amount: 50,
-                      message: "Amazing gameplay today!",
-                    },
-                  ].map((tip, index) => (
+                  {transactionId.map((tip, index) => (
                     <div
                       key={index}
                       className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
                     >
                       <Avatar className="w-8 h-8">
                         <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
-                          {tip.name.charAt(0)}
+                          {tip.tipperName.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-between space-x-2">
                           <span className="font-medium text-sm">
-                            {tip.name}
+                            {tip.tipperName}
                           </span>
-                          <Badge variant="secondary" className="text-xs">
-                            ₹{tip.amount}
+                          <Badge
+                            variant="secondary"
+                            className="text-xs bg-green-100 text-green-700"
+                          >
+                            ₹{tip.amount.toFixed(2)}
                           </Badge>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">

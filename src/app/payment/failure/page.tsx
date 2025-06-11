@@ -13,18 +13,7 @@ export default function PaymentFailedPage() {
   const streamer = searchParams.get("streamer") || "StreamerName";
   const errorCode = searchParams.get("code") || "payment_failed";
 
-  // Map error codes to user-friendly messages
-  const errorMessages: Record<string, string> = {
-    payment_failed: "Your payment could not be processed at this time.",
-    insufficient_funds: "There were insufficient funds in your account.",
-    card_declined: "Your card was declined by the issuing bank.",
-    expired_card: "The card you used has expired.",
-    invalid_details: "The payment details provided were invalid.",
-    network_error: "A network error occurred during processing.",
-  };
-
   const errorMessage =
-    errorMessages[errorCode] ||
     "An unexpected error occurred during payment processing.";
 
   return (
@@ -78,13 +67,12 @@ export default function PaymentFailedPage() {
                     transition={{ delay: 0.6 }}
                     className="bg-red-50 rounded-lg p-4 mb-6 text-left"
                   >
-                    <p className="text-sm text-red-800">
-                      <span className="font-medium">Error code:</span>{" "}
-                      {errorCode}
+                    <p className="text-sm text-red-800 text-center">
+                      <span className="font-medium">Error:</span> There is an
+                      error processing your payment.
                     </p>
-                    <p className="text-sm text-red-800 mt-1">
-                      <span className="font-medium">Tip recipient:</span>{" "}
-                      {streamer}
+                    <p className="text-center text-sm text-red-800 mt-1">
+                      Please try again later.
                     </p>
                   </motion.div>
 
@@ -99,26 +87,11 @@ export default function PaymentFailedPage() {
                       className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                       asChild
                     >
-                      <Link href={`/tip/${streamer.toLowerCase()}`}>
-                        <RefreshCcw className="mr-2 h-4 w-4" />
-                        Try Again
+                      <Link href="/">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Home
                       </Link>
                     </Button>
-
-                    <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1" asChild>
-                        <Link href="/">
-                          <ArrowLeft className="mr-2 h-4 w-4" />
-                          Back to Home
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="flex-1" asChild>
-                        <Link href="/help">
-                          <HelpCircle className="mr-2 h-4 w-4" />
-                          Get Help
-                        </Link>
-                      </Button>
-                    </div>
                   </motion.div>
                 </div>
               </CardContent>
