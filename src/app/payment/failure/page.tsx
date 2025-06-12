@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import { XCircle, ArrowLeft, RefreshCcw, HelpCircle } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useSearchParams } from "next/navigation";
 
 export default function PaymentFailedPage() {

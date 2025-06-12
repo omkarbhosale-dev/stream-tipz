@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import { CheckCircle, Home } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 
 export default function PaymentSuccessPage() {

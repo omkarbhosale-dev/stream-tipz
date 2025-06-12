@@ -1,5 +1,11 @@
-[build]
-cache = false
-
 [phases.setup]
-command = "npm install"
+aptPkgs = ['build-essential']  # bun-specific nixPkgs removed
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
