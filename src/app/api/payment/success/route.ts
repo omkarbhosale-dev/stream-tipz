@@ -175,74 +175,74 @@ export async function POST(req: NextRequest) {
 }
 
 // Helper function to test StreamElements API connection
-export async function testStreamElementsAPI(
-  jwtToken: string,
-  channelId: string
-) {
-  const testData = {
-    user: {
-      userId: "test_user_123",
-      username: "TestUser",
-      email: "test@example.com",
-    },
-    provider: "external",
-    message: "Test donation",
-    amount: 1,
-    currency: "INR",
-    imported: true,
-  };
+// async function testStreamElementsAPI(
+//   jwtToken: string,
+//   channelId: string
+// ) {
+//   const testData = {
+//     user: {
+//       userId: "test_user_123",
+//       username: "TestUser",
+//       email: "test@example.com",
+//     },
+//     provider: "external",
+//     message: "Test donation",
+//     amount: 1,
+//     currency: "INR",
+//     imported: true,
+//   };
 
-  const options = {
-    method: "POST",
-    url: `https://api.streamelements.com/kappa/v3/tips/${channelId}`,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json; charset=utf-8, application/json",
-      Authorization: `Bearer ${jwtToken}`,
-    },
-    data: testData,
-    timeout: 10000,
-  };
+//   const options = {
+//     method: "POST",
+//     url: `https://api.streamelements.com/kappa/v3/tips/${channelId}`,
+//     headers: {
+//       "Content-Type": "application/json",
+//       Accept: "application/json; charset=utf-8, application/json",
+//       Authorization: `Bearer ${jwtToken}`,
+//     },
+//     data: testData,
+//     timeout: 10000,
+//   };
 
-  try {
-    const response = await axios.request(options);
-    return {
-      success: true,
-      status: response.status,
-      data: response.data,
-    };
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return {
-        success: false,
-        status: error.response?.status,
-        error: error.response?.data || error.message,
-      };
-    } else {
-      return {
-        success: false,
-        status: undefined,
-        error: (error as Error).message || "Unknown error",
-      };
-    }
-  }
-}
+//   try {
+//     const response = await axios.request(options);
+//     return {
+//       success: true,
+//       status: response.status,
+//       data: response.data,
+//     };
+//   } catch (error) {
+//     if (axios.isAxiosError(error)) {
+//       return {
+//         success: false,
+//         status: error.response?.status,
+//         error: error.response?.data || error.message,
+//       };
+//     } else {
+//       return {
+//         success: false,
+//         status: undefined,
+//         error: (error as Error).message || "Unknown error",
+//       };
+//     }
+//   }
+// }
 
 // Helper function to validate JWT token format
-export function validateJWTToken(token: string): boolean {
-  if (!token) return false;
+// function validateJWTToken(token: string): boolean {
+//   if (!token) return false;
 
-  // Basic JWT format check (should have 3 parts separated by dots)
-  const parts = token.split(".");
-  if (parts.length !== 3) return false;
+//   // Basic JWT format check (should have 3 parts separated by dots)
+//   const parts = token.split(".");
+//   if (parts.length !== 3) return false;
 
-  try {
-    // Try to decode the payload (middle part)
-    const payload = JSON.parse(atob(parts[1]));
+//   try {
+//     // Try to decode the payload (middle part)
+//     const payload = JSON.parse(atob(parts[1]));
 
-    // Check if token has required StreamElements fields
-    return !!(payload.channel && payload.role && payload.exp);
-  } catch {
-    return false;
-  }
-}
+//     // Check if token has required StreamElements fields
+//     return !!(payload.channel && payload.role && payload.exp);
+//   } catch {
+//     return false;
+//   }
+// }
