@@ -45,7 +45,7 @@ export default function TipClient({ streamer }: { streamer: string }) {
   const [tipperName, setTipperName] = useState("");
   const [customAmount, setCustomAmount] = useState("");
   const [message, setMessage] = useState("");
-  const [streamerData, setStreamerData] = useState([]);
+  const [streamerData, setStreamerData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]); // FIXED: Typed state - initialize with empty array
@@ -62,22 +62,46 @@ export default function TipClient({ streamer }: { streamer: string }) {
               data.data.userId
             );
             if (transactionDataGet.success) {
-              const sorted = [...transactionDataGet.data].sort(
+              const getTransactionDate = (tx: any) =>
+                tx.createdAt ||
+                tx.created_at ||
+                tx.date ||
+                (typeof tx._id === "string" && tx._id.length === 24
+                  ? new Date(parseInt(tx._id.substring(0, 8), 16) * 1000)
+                  : undefined);
+
+              const sorted = [...(transactionDataGet.data ?? [])].sort(
                 (a, b) =>
-                  new Date(b.createdAt).getTime() -
-                  new Date(a.createdAt).getTime()
+                  new Date(getTransactionDate(b)).getTime() -
+                  new Date(getTransactionDate(a)).getTime()
               );
 
               const latestThree = sorted.slice(0, 3);
               console.log("Latest three transactions:", latestThree);
 
-              setTransactions(latestThree); // FIXED: Renamed to transactions
+              // Map backend transactions to local Transaction type
+              setTransactions(
+                latestThree.map((tx: any) => ({
+                  tipperName: tx.tipperName || tx.tipper_name || "Anonymous",
+                  amount: tx.amount ?? 0,
+                  message: tx.message ?? "",
+                  createdAt:
+                    tx.createdAt ||
+                    tx.created_at ||
+                    tx.date ||
+                    (typeof tx._id === "string" && tx._id.length === 24
+                      ? new Date(
+                          parseInt(tx._id.substring(0, 8), 16) * 1000
+                        ).toISOString()
+                      : new Date().toISOString()),
+                }))
+              );
             }
           } else {
             console.error("Streamer userId is undefined.");
           }
         } else {
-          console.error("Failed to fetch streamer data:", data.error);
+          console.error("Failed to fetch streamer data.");
           router.push("/");
         }
       } catch (error) {

@@ -48,7 +48,11 @@ export default function AuthPage() {
             <Button
               variant="outline"
               className="w-full h-12 border-2 hover:bg-gray-50 transition-all duration-200"
-              onClick={() => signIn("google")}
+              onClick={() =>
+                signIn("google", {
+                  callbackUrl: "/on-boarding",
+                })
+              }
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                 <path

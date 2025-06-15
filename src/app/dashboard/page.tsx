@@ -51,7 +51,15 @@ import autoTable from "jspdf-autotable";
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [streamerData, setStreamerData] = useState();
+  type IStreamer = {
+    id: string;
+    username: string;
+    displayName: string;
+    bio?: string;
+    upiId?: string;
+    // Add other fields as needed based on your backend response
+  };
+  const [streamerData, setStreamerData] = useState<IStreamer | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [timeFilter, setTimeFilter] = useState<"today" | "30days" | "90days">(
     "30days"
@@ -69,10 +77,14 @@ export default function DashboardPage() {
     amount: number;
     message: string;
     createdAt?: string;
+    tipperName: string;
+    tipperEmail?: string;
   };
 
   const [transaction, setTransaction] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<
+    Transaction[]
+  >([]);
 
   useEffect(() => {
     // Wait until session is loaded and authenticated
@@ -86,18 +98,40 @@ export default function DashboardPage() {
         }
 
         const data = await getStreamer(session.user.id);
-        setStreamerData(data.data);
-        setStreamerDisplayName(data.data?.displayName);
-        setStreamerBio(data.data?.bio);
-        setStreamerUpiId(data.data?.upiId);
+        // Map backend data to IStreamer shape
+        const streamer: IStreamer | null = data.data
+          ? {
+              id: data.data.id ?? data.data._id ?? "",
+              username: data.data.username,
+              displayName: data.data.displayName,
+              bio: data.data.bio,
+              upiId: data.data.upiId,
+            }
+          : null;
+        setStreamerData(streamer);
+        setStreamerDisplayName(streamer?.displayName ?? "");
+        setStreamerBio(streamer?.bio ?? "");
+        setStreamerUpiId(streamer?.upiId ?? "");
         // console.log("Fetched Streamer Data:", data);
         const transactionDataGet = await getStreamerTransactions(
           session.user.id
         );
         console.log("Fetched Transactions:", transactionDataGet);
 
-        setTransaction(transactionDataGet.data);
-        setFilteredTransactions(transactionDataGet.data);
+        const mappedTransactions = (transactionDataGet.data ?? []).map(
+          (item: any, idx: number) => ({
+            id: item.id ?? item._id ?? idx,
+            date: item.date ?? item.createdAt ?? "",
+            name: item.tipperName ?? item.name ?? "",
+            amount: item.amount ?? 0,
+            message: item.message ?? "",
+            createdAt: item.createdAt ?? item.date ?? "",
+            tipperName: item.tipperName ?? item.name ?? "",
+            tipperEmail: item.tipperEmail ?? "",
+          })
+        );
+        setTransaction(mappedTransactions);
+        setFilteredTransactions(mappedTransactions);
         if (data?.success === false) {
           router.push("/on-boarding");
         }
@@ -128,7 +162,7 @@ export default function DashboardPage() {
 
   const filterTransactions = () => {
     const filteredTableData = transaction.filter((tip) => {
-      const tipDate = new Date(tip.createdAt);
+      const tipDate = new Date(tip.createdAt ?? "");
       return (
         (!startDate || tipDate >= startDate) && (!endDate || tipDate <= endDate)
       );
@@ -140,7 +174,7 @@ export default function DashboardPage() {
   };
 
   const summaryFilteredData = filteredTransactions.filter((tip) => {
-    const tipDate = new Date(tip.createdAt);
+    const tipDate = new Date(tip.createdAt ?? "");
     const now = new Date();
 
     if (timeFilter === "today") {
@@ -278,7 +312,12 @@ export default function DashboardPage() {
               <Label htmlFor="time-filter" className="font-medium">
                 Time Period:
               </Label>
-              <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <Select
+                value={timeFilter}
+                onValueChange={(value) =>
+                  setTimeFilter(value as "today" | "30days" | "90days")
+                }
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
@@ -397,8 +436,14 @@ export default function DashboardPage() {
                     <Input
                       id="start-date"
                       type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
+                      value={
+                        startDate ? startDate.toISOString().split("T")[0] : ""
+                      }
+                      onChange={(e) =>
+                        setStartDate(
+                          e.target.value ? new Date(e.target.value) : null
+                        )
+                      }
                       className="w-40"
                     />
                   </div>
@@ -409,8 +454,12 @@ export default function DashboardPage() {
                     <Input
                       id="end-date"
                       type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
+                      value={endDate ? endDate.toISOString().split("T")[0] : ""}
+                      onChange={(e) =>
+                        setEndDate(
+                          e.target.value ? new Date(e.target.value) : null
+                        )
+                      }
                       className="w-40"
                     />
                   </div>
@@ -454,9 +503,9 @@ export default function DashboardPage() {
                       {filteredTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell className="font-medium">
-                            {new Date(transaction.createdAt).toLocaleDateString(
-                              "en-GB"
-                            )}
+                            {new Date(
+                              transaction.createdAt ?? ""
+                            ).toLocaleDateString("en-GB")}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">

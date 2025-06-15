@@ -1,11 +1,12 @@
 import TipClient from "./TipClient";
 
 type PageProps = {
-  params: {
+  params: Promise<{
     streamer: string;
-  };
+  }>;
 };
 
-export default function Page({ params }: PageProps) {
-  return <TipClient streamer={params.streamer} />;
+export default async function Page({ params }: PageProps) {
+  const { streamer } = await params;
+  return <TipClient streamer={streamer} />;
 }
